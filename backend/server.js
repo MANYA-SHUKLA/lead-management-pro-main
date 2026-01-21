@@ -1,6 +1,9 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import connectDB from './src/config/database.js';
 
 // Import routes
@@ -11,6 +14,9 @@ import hrRoutes from './src/routes/hr.routes.js';
 
 // Load environment variables
 dotenv.config({ path: '.env.local' });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Connect to database
 connectDB();
@@ -68,8 +74,24 @@ app.get('/', (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Lead Management API is running. Try /api/health',
-    health: '/api/health'
+    health: '/api/health',
+    swagger: '/swagger.yaml',
+    madeWithLove: 'Made with love by Manya Shukla'
   });
+});
+
+// Serve OpenAPI spec (Swagger)
+app.get('/swagger.yaml', (req, res) => {
+  try {
+    const specPath = path.join(__dirname, '../swagger.yaml');
+    const spec = fs.readFileSync(specPath, 'utf8');
+    res.status(200).type('text/yaml').send(spec);
+  } catch (error) {
+    res.status(404).json({
+      status: 'error',
+      message: 'Swagger spec not found'
+    });
+  }
 });
 
 // Global error handler

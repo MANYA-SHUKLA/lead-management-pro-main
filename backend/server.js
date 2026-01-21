@@ -4,6 +4,7 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import swaggerUi from 'swagger-ui-express';
 import connectDB from './src/config/database.js';
 
 // Import routes
@@ -93,6 +94,19 @@ app.get('/swagger.yaml', (req, res) => {
     });
   }
 });
+
+// Swagger UI
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(null, {
+    customSiteTitle: 'Lead Management Pro API Docs',
+    explorer: true,
+    swaggerOptions: {
+      url: '/swagger.yaml'
+    }
+  })
+);
 
 // Global error handler
 app.use((err, req, res, next) => {

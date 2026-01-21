@@ -84,6 +84,11 @@ cd backend
 npm install
 ```
 
+### API Docs (Swagger)
+
+- **Swagger UI (local)**: `http://localhost:5000/api/docs`
+- **OpenAPI spec (local)**: `http://localhost:5000/swagger.yaml`
+
 3. Create `.env` file:
 ```env
 # Server Configuration

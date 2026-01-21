@@ -1,0 +1,1038 @@
+openapi: 3.0.3
+info:
+  title: Lead Management Pro API
+  version: 1.0.0
+  description: |
+    OpenAPI (Swagger) specification for the Lead Management Pro backend.
+
+    Authentication is via JWT in the `Authorization` header:
+    `Authorization: Bearer <token>`
+servers:
+  - url: http://localhost:5000
+    description: Local development
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Admin
+  - name: HR
+  - name: Team Leader
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string, example: Lead Management API is running }
+                  timestamp: { type: string, format: date-time }
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: |
+        Public in the current implementation (note: code comment suggests admin-only in production).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSuccessResponse"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSuccessResponse"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/UserSafe"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      summary: List users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [admin, team_leader, hr]
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by name or email (case-insensitive)
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  results: { type: integer, example: 2 }
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UserSafe"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      tags: [Admin]
+      summary: Create a user (team leader or HR)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCreateUserRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string, example: User created successfully }
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/UserSafe"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/users/{id}:
+    put:
+      tags: [Admin]
+      summary: Update user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateUserRequest"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string, example: User updated successfully }
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/UserSafe"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      tags: [Admin]
+      summary: Delete user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+      responses:
+        "200":
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string, example: User deleted successfully }
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/assign-hr:
+    put:
+      tags: [Admin]
+      summary: Assign an HR user to a Team Leader
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignHRRequest"
+      responses:
+        "200":
+          description: Assignment updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string, example: HR user assigned to Team Leader successfully }
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/UserSafe"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/upload-leads:
+    post:
+      tags: [Admin]
+      summary: Upload leads (CSV/XLSX)
+      description: |
+        Upload a CSV or Excel file containing lead rows.
+        Expected columns: `name`, `email`, `phone`, optional: `company`, `position`, `source`.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Upload processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadLeadsResponse"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/distribute-leads:
+    post:
+      tags: [Admin]
+      summary: Assign leads to an HR user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DistributeLeadsRequest"
+      responses:
+        "200":
+          description: Leads assigned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string, example: 10 leads assigned to Jane Doe }
+                  data:
+                    type: object
+                    properties:
+                      assignedCount: { type: integer, example: 10 }
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/leads:
+    get:
+      tags: [Admin]
+      summary: List all leads (filters + pagination)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/LeadStatus"
+        - in: query
+          name: assignedTo
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Leads list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadListResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/analytics:
+    get:
+      tags: [Admin]
+      summary: Admin analytics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAnalyticsResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/hr/stats:
+    get:
+      tags: [HR]
+      summary: HR performance stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: HR stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HRStatsResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/hr/leads:
+    get:
+      tags: [HR]
+      summary: List my assigned leads
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/LeadStatus"
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Leads list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadListResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/hr/leads/{id}:
+    get:
+      tags: [HR]
+      summary: Get a single lead (must be assigned to current HR)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+      responses:
+        "200":
+          description: Lead details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: object
+                    properties:
+                      lead:
+                        $ref: "#/components/schemas/Lead"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    put:
+      tags: [HR]
+      summary: Update a lead status (must be assigned to current HR)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLeadStatusRequest"
+      responses:
+        "200":
+          description: Lead updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string, example: Lead status updated successfully }
+                  data:
+                    type: object
+                    properties:
+                      lead:
+                        $ref: "#/components/schemas/Lead"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/team-leader/hr-users:
+    get:
+      tags: ["Team Leader"]
+      summary: List HR users assigned to me (with stats)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: HR users with performance stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamLeaderHRUsersResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/team-leader/analytics:
+    get:
+      tags: ["Team Leader"]
+      summary: Team analytics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Team analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamLeaderAnalyticsResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/team-leader/leads:
+    get:
+      tags: ["Team Leader"]
+      summary: List team leads (filters + pagination)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: hrUserId
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+          description: Filter by a specific HR user under this team leader
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/LeadStatus"
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Leads list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadListResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    ErrorResponse:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ObjectId:
+      type: string
+      description: MongoDB ObjectId
+      pattern: "^[a-fA-F0-9]{24}$"
+      example: 507f1f77bcf86cd799439011
+
+    LeadStatus:
+      type: string
+      enum: [pending, contacted, converted, rejected, not_reachable]
+
+    Role:
+      type: string
+      enum: [admin, team_leader, hr]
+
+    ErrorResponse:
+      type: object
+      properties:
+        status: { type: string, example: error }
+        statusCode: { type: integer, example: 400 }
+        message: { type: string, example: Something went wrong }
+      required: [status, message]
+
+    UserRef:
+      type: object
+      properties:
+        _id: { $ref: "#/components/schemas/ObjectId" }
+        name: { type: string, example: Jane Doe }
+        email: { type: string, format: email, example: jane@example.com }
+
+    UserSafe:
+      type: object
+      properties:
+        _id: { $ref: "#/components/schemas/ObjectId" }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/Role" }
+        teamLeader:
+          oneOf:
+            - { $ref: "#/components/schemas/ObjectId" }
+            - { $ref: "#/components/schemas/UserRef" }
+            - { type: "null" }
+          description: Team leader reference (populated on some endpoints)
+        createdBy:
+          oneOf:
+            - { $ref: "#/components/schemas/ObjectId" }
+            - { type: "null" }
+        isActive: { type: boolean, example: true }
+        phone:
+          oneOf:
+            - { type: string, example: "+1-555-0100" }
+            - { type: "null" }
+        lastLogin:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: "null" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Lead:
+      type: object
+      properties:
+        _id: { $ref: "#/components/schemas/ObjectId" }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        company:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        position:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        source: { type: string, example: "CSV Upload" }
+        status: { $ref: "#/components/schemas/LeadStatus" }
+        assignedTo:
+          oneOf:
+            - { $ref: "#/components/schemas/ObjectId" }
+            - { $ref: "#/components/schemas/UserRef" }
+            - { type: "null" }
+        uploadedBy:
+          oneOf:
+            - { $ref: "#/components/schemas/ObjectId" }
+            - { $ref: "#/components/schemas/UserRef" }
+        notes:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        lastContactedAt:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: "null" }
+        convertedAt:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: "null" }
+        customFields:
+          type: object
+          additionalProperties:
+            type: string
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Pagination:
+      type: object
+      properties:
+        total: { type: integer, example: 120 }
+        page: { type: integer, example: 1 }
+        pages: { type: integer, example: 3 }
+
+    LeadListResponse:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        results: { type: integer, example: 50 }
+        data:
+          type: object
+          properties:
+            leads:
+              type: array
+              items:
+                $ref: "#/components/schemas/Lead"
+            pagination:
+              $ref: "#/components/schemas/Pagination"
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name: { type: string, example: Jane Doe }
+        email: { type: string, format: email, example: jane@example.com }
+        password: { type: string, format: password, example: "secret123" }
+        role: { $ref: "#/components/schemas/Role" }
+        phone:
+          oneOf:
+            - { type: string, example: "+1-555-0100" }
+            - { type: "null" }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: jane@example.com }
+        password: { type: string, format: password, example: "secret123" }
+
+    AuthSuccessResponse:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        message: { type: string, example: Login successful }
+        data:
+          type: object
+          properties:
+            user:
+              $ref: "#/components/schemas/UserSafe"
+            token:
+              type: string
+              description: JWT token
+
+    AdminCreateUserRequest:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+        role:
+          type: string
+          enum: [team_leader, hr]
+        phone:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        teamLeaderId:
+          oneOf:
+            - { $ref: "#/components/schemas/ObjectId" }
+            - { type: "null" }
+          description: For HR users, optionally assign to a team leader on creation
+
+    AdminUpdateUserRequest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        phone:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        role:
+          type: string
+          enum: [team_leader, hr]
+        teamLeaderId:
+          oneOf:
+            - { $ref: "#/components/schemas/ObjectId" }
+            - { type: "null" }
+
+    AssignHRRequest:
+      type: object
+      required: [hrUserId, teamLeaderId]
+      properties:
+        hrUserId: { $ref: "#/components/schemas/ObjectId" }
+        teamLeaderId: { $ref: "#/components/schemas/ObjectId" }
+
+    DistributeLeadsRequest:
+      type: object
+      required: [leadIds, hrUserId]
+      properties:
+        leadIds:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ObjectId"
+        hrUserId:
+          $ref: "#/components/schemas/ObjectId"
+
+    UpdateLeadStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: "#/components/schemas/LeadStatus" }
+        notes:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+
+    UploadLeadsResponse:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        message: { type: string, example: Successfully uploaded 10 leads }
+        data:
+          type: object
+          properties:
+            totalRows: { type: integer, example: 12 }
+            successCount: { type: integer, example: 10 }
+            errorCount: { type: integer, example: 2 }
+            errors:
+              type: array
+              description: Present only when errorCount > 0
+              items:
+                type: object
+                properties:
+                  row: { type: integer, example: 3 }
+                  email: { type: string, format: email, example: duplicate@example.com }
+                  message: { type: string }
+
+    AdminAnalyticsResponse:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        data:
+          type: object
+          properties:
+            totalLeads: { type: integer, example: 1000 }
+            unassignedLeads: { type: integer, example: 120 }
+            statusCounts:
+              type: object
+              properties:
+                pending: { type: integer }
+                contacted: { type: integer }
+                converted: { type: integer }
+                rejected: { type: integer }
+                not_reachable: { type: integer }
+            userCounts:
+              type: object
+              properties:
+                admin: { type: integer }
+                teamLeader: { type: integer }
+                hr: { type: integer }
+            hrDistribution:
+              type: array
+              items:
+                type: object
+                properties:
+                  hrUser: { $ref: "#/components/schemas/UserRef" }
+                  totalLeads: { type: integer }
+                  converted: { type: integer }
+                  contacted: { type: integer }
+                  rejected: { type: integer }
+                  conversionRate: { type: number, example: 12.5 }
+
+    HRStatsResponse:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        data:
+          type: object
+          properties:
+            stats:
+              type: object
+              properties:
+                totalLeads: { type: integer }
+                pending: { type: integer }
+                contacted: { type: integer }
+                converted: { type: integer }
+                rejected: { type: integer }
+                notReachable: { type: integer }
+                conversionRate:
+                  oneOf:
+                    - { type: string, example: "12.50" }
+                    - { type: number, example: 12.5 }
+
+    HRUserStats:
+      type: object
+      properties:
+        totalLeads: { type: integer }
+        converted: { type: integer }
+        contacted: { type: integer }
+        pending: { type: integer }
+        rejected: { type: integer }
+        notReachable: { type: integer }
+        conversionRate:
+          oneOf:
+            - { type: string, example: "12.50" }
+            - { type: number, example: 12.5 }
+
+    TeamLeaderHRUserWithStats:
+      allOf:
+        - $ref: "#/components/schemas/UserSafe"
+        - type: object
+          properties:
+            stats:
+              $ref: "#/components/schemas/HRUserStats"
+
+    TeamLeaderHRUsersResponse:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        results: { type: integer, example: 3 }
+        data:
+          type: object
+          properties:
+            hrUsers:
+              type: array
+              items:
+                $ref: "#/components/schemas/TeamLeaderHRUserWithStats"
+
+    TeamLeaderAnalyticsResponse:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        data:
+          type: object
+          properties:
+            totalHRUsers: { type: integer, example: 3 }
+            totalLeads: { type: integer, example: 250 }
+            statusCounts:
+              type: object
+              properties:
+                pending: { type: integer }
+                contacted: { type: integer }
+                converted: { type: integer }
+                rejected: { type: integer }
+                not_reachable: { type: integer }
+            hrPerformance:
+              type: array
+              items:
+                type: object
+                properties:
+                  hrUser: { $ref: "#/components/schemas/UserRef" }
+                  totalLeads: { type: integer }
+                  converted: { type: integer }
+                  contacted: { type: integer }
+                  pending: { type: integer }
+                  conversionRate: { type: number, example: 12.5 }

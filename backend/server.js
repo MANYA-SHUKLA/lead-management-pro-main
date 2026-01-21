@@ -63,6 +63,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Root route (useful for Render / browser visits)
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Lead Management API is running. Try /api/health',
+    health: '/api/health'
+  });
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);

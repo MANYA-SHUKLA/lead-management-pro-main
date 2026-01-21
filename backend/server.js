@@ -30,6 +30,7 @@ const allowedOrigins = [
   'http://localhost:3001',
   'http://localhost:3002',
   'https://lead-management-pro.vercel.app',
+  'https://lead-management-pro-main.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
